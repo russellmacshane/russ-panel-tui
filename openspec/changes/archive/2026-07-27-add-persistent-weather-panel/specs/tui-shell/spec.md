@@ -1,16 +1,4 @@
-# tui-shell Specification
-
-## Purpose
-The tui-shell capability provides the terminal UI application shell built on Ink and React. It defines the executable entry point, the long-lived session and how the user leaves it, ownership of terminal state (the alternate screen buffer and its restoration), the viewport-sized root layout that panels render into, and the TypeScript build step that produces runnable output.
-
-## Requirements
-
-### Requirement: Application entry point
-The system SHALL provide an executable entry point that mounts a root React component into the terminal using Ink's `render`.
-
-#### Scenario: Launching the app
-- **WHEN** the user runs the built entry point (`node dist/cli.js`)
-- **THEN** Ink mounts the root `<App>` component and renders it to the terminal without errors
+## ADDED Requirements
 
 ### Requirement: Persistent session
 The application SHALL remain running after its first render, continuing to accept input and update the display, until the user explicitly quits.
@@ -33,17 +21,6 @@ The application SHALL provide a documented key binding that terminates the sessi
 #### Scenario: Quitting with Ctrl-C
 - **WHEN** the user presses Ctrl-C
 - **THEN** the application unmounts, restores the terminal, and exits
-
-### Requirement: Clean exit
-The application SHALL terminate only in response to a user quit action or a termination signal, and SHALL return control to the shell with a success exit code when quit normally.
-
-#### Scenario: Process exits cleanly
-- **WHEN** the user quits the application
-- **THEN** the process exits with code 0 and returns the user to their shell prompt
-
-#### Scenario: Process does not exit on its own
-- **WHEN** the app has finished rendering and the user has not quit
-- **THEN** the process does not exit
 
 ### Requirement: Alternate screen buffer
 The application SHALL render into the terminal's alternate screen buffer, so that its output does not enter the user's scrollback.
@@ -89,9 +66,21 @@ The application SHALL display a persistent footer listing the currently availabl
 - **WHEN** the app is running
 - **THEN** a footer is displayed showing at minimum the quit binding and the refresh binding
 
-### Requirement: Build step
-The project SHALL compile TypeScript sources in `src/` to runnable JavaScript in `dist/` via `tsc`.
+## MODIFIED Requirements
 
-#### Scenario: Building the project
-- **WHEN** the user runs `npm run build`
-- **THEN** `tsc` compiles `src/*.tsx` to `dist/` with no type errors and produces a runnable `dist/cli.js`
+### Requirement: Clean exit
+The application SHALL terminate only in response to a user quit action or a termination signal, and SHALL return control to the shell with a success exit code when quit normally.
+
+#### Scenario: Process exits cleanly
+- **WHEN** the user quits the application
+- **THEN** the process exits with code 0 and returns the user to their shell prompt
+
+#### Scenario: Process does not exit on its own
+- **WHEN** the app has finished rendering and the user has not quit
+- **THEN** the process does not exit
+
+## REMOVED Requirements
+
+### Requirement: Hello-world render
+**Reason**: The bootstrap greeting was scaffolding to prove the toolchain. The shell now renders the weather panel and its keybinding footer instead.
+**Migration**: None required — no consumer depends on the greeting. Display behavior is now covered by the `weather-panel` capability and the Keybinding footer requirement above.
