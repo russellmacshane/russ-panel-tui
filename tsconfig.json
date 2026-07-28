@@ -11,5 +11,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // The build ships the app only. Test files are colocated with sources, so
+  // they are excluded here and typechecked by tsconfig.test.json instead.
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }
