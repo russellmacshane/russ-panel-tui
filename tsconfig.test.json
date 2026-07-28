@@ -1,0 +1,13 @@
+{
+	// Typechecks everything, tests included, without emitting. `npm run build`
+	// deliberately excludes test files, so this is what catches type errors in
+	// them — CI runs both.
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"rootDir": ".",
+		"types": ["node"]
+	},
+	"include": ["src", "test", "vitest.config.ts"],
+	"exclude": []
+}
