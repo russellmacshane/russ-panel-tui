@@ -24,7 +24,7 @@ The shell SHALL track which input mode is active and SHALL route key presses to 
 - **THEN** the mode is dismissed without applying a change, and the application does not exit
 
 ### Requirement: Modal content fits the viewport
-Content rendered by an active mode SHALL be bounded by the terminal's current dimensions, so that a list of options cannot overflow the visible area.
+Content rendered by an active mode SHALL be bounded by the terminal's current dimensions, so that a list of options cannot overflow the visible area. The space taken by the footer and by the notice area, when a notice is present, SHALL be excluded from the space available to the mode.
 
 #### Scenario: A list longer than the available height
 - **WHEN** a mode displays more options than the terminal has rows to show
@@ -33,6 +33,29 @@ Content rendered by an active mode SHALL be bounded by the terminal's current di
 #### Scenario: Resizing while a mode is active
 - **WHEN** the terminal is resized while a mode is active
 - **THEN** the mode's content re-renders within the new dimensions with no content exceeding the visible area
+
+#### Scenario: A notice reduces the space available to a mode
+- **WHEN** a notice is displayed while a mode renders more options than the remaining rows can show
+- **THEN** the mode's content is bounded by the space left after the notice and footer, and the highlighted option remains visible
+
+### Requirement: Notice area
+The shell SHALL provide a single-line notice area, distinct from both the content area and the keybinding footer, where the application can post a short message such as a warning. The notice area SHALL be visible regardless of the active mode, SHALL display at most one message at a time, and SHALL occupy no space when there is no message. A posted message SHALL remain until the condition that raised it is resolved or another message replaces it, and SHALL NOT be removed on a timer.
+
+#### Scenario: Posting a notice
+- **WHEN** a component posts a notice message
+- **THEN** the message is displayed on a single line, distinct from the footer and the content area, in whichever mode is active
+
+#### Scenario: No notice occupies no space
+- **WHEN** no notice message is posted, or the current notice has been cleared
+- **THEN** the notice area occupies no rows and the content area reclaims that space, so the layout matches an app with nothing to report
+
+#### Scenario: At most one notice at a time
+- **WHEN** a notice is posted while an earlier notice is still displayed
+- **THEN** the later message replaces the earlier one, so that only one notice is ever shown
+
+#### Scenario: A notice is not dismissed on a timer
+- **WHEN** a notice has been posted
+- **THEN** it remains displayed until it is cleared or replaced by the application, rather than disappearing after an interval, so that no injectable clock is required to display or test it
 
 ## MODIFIED Requirements
 

@@ -44,6 +44,8 @@ The practical test: a future forecast or air-quality panel would consume `locati
 
 `count=10` because ten rows plus chrome fits a conventional 80×24 terminal, and the maximum of 100 has no plausible use here.
 
+The geocoding request reuses the existing `REQUEST_TIMEOUT_MS` rather than introducing a second timeout constant — same vendor, one client shape, one availability story. The value is an abort *ceiling*, not a target: a search returns in well under a second on success, so a generous ceiling costs the user nothing and only bounds the failure path, which has no reason to bail faster than a weather request. `config.ts`'s comment on the constant is generalised from "leave the panel loading forever" to cover any Open-Meteo request.
+
 ### 3. Search on Enter, not per keystroke
 
 | | debounced live search | search on Enter |
@@ -79,7 +81,7 @@ A hard dependency on two services to display one temperature would be a real ava
 
 This is also what removes an entire category of states: there is no "no location configured", no blocking first-run prompt, and no launch path that renders nothing. Discovery happens through the footer's `l location` binding instead.
 
-The default must be **structurally identical to a geocoded pick**, or the code carries two location types and a formatting branch. One consequence is user-visible: the header becomes `San Antonio, Texas` rather than the current `Lansing, MI`, because the API returns full region names and offers no abbreviations.
+The default must be **structurally identical to a geocoded pick**, or the code carries two location types and a formatting branch. One consequence is user-visible: the header becomes `San Antonio, Texas` rather than the current `Lansing, MI`, because the API returns full region names and offers no abbreviations. ("Structurally identical" is about the *active/stored* location; decision 15 adds a separate transient `Candidate` shape for search results, which is not an active location and does not violate this.)
 
 ### 6. `XDG_CONFIG_HOME` — a production feature that happens to give free testability
 
@@ -93,6 +95,8 @@ Honouring the variable is correct behaviour on its own merits. That it also make
 Setting it in `test/support/setup.ts` additionally guarantees no test can reach the developer's real `~/.config`, which is the filesystem analogue of default-deny.
 
 JSON rather than TOML or YAML: `JSON.parse` is built in, and the format is not the interesting part of this change. The location nests under a `location` key so that `TEMPERATURE_UNIT` — the obvious next resident — can be added later without reshaping the file.
+
+**No `version` field, deliberately.** A version marker's only value would be enabling a *silent migration* when the `Location` shape changes in some future change. Additive settings (a sibling `units` key) need no version — the nesting already covers them. A breaking shape change is handled adequately without one: the malformed path falls back to the default, warns, and — critically — **preserves the file** rather than destroying it, so the worst case is a warning and a one-keystroke re-pick, exactly the first-run cost the proposal already accepts for every user. Adding a version now is migration infrastructure with zero migrations, against a change that declines frameworks before their second consumer. The escape hatch is free when it is actually needed: a future breaking change can adopt the convention "absent `version` ⇒ v1" at that point and migrate from there.
 
 ### 7. The geocoding client is deliberately *less* strict than the weather client
 
@@ -129,13 +133,13 @@ The client stays strict about the *shape of results it does receive*: a result m
 
 A 1,156-person village outranking an 87,675-person city will read as broken. Ordering exact name matches ahead of fuzzy ones, then by population descending within each group, puts San Antonio TX first and orders the Springfields sensibly.
 
-The trade-off is that someone hunting a small hometown is pushed down the list — mitigated by `count=10` keeping it visible and by the list being scrollable.
+The trade-off is that someone hunting a small hometown is pushed down the list — but exact-match-first blunts this more than it first appears. A small hometown searched by its exact name lands in the *exact-match group* and is therefore only ever pushed beneath *larger exact-name* matches; it is buried only if a name has more than ten larger exact matches, which is vanishingly rare. It stays within `count=10` and the list is scrollable regardless. This is why the ordering is confirmed rather than provisional: the failure mode of trusting API order (a 1,156-person village above an 87,675-person city on an exact query) is common and reads as broken, while the failure mode of re-sorting is rare and still visible.
 
 ### 9. Project the API payload; never store it raw
 
 **Finding, from the live API:** San Antonio's result carries an **80-element `postcodes` array**, plus `id`, `admin1_id`, `admin2_id`, `country_id`, `feature_code`, and `elevation`. Storing the result object would give the user a config file consisting mostly of zip codes. (`San Antonio de Palé` also reports `elevation: 9999.0`, a sentinel — the payload is not clean.)
 
-Project to exactly the six fields in decision 4. `timezone` is captured now, unused: it is free at selection time, and any future forecast or sunrise/sunset panel would need it, whereas adding it later means re-geocoding every saved location.
+Project to exactly the six fields in decision 4. `timezone` is captured now, unused: it is free at selection time, and any future forecast or sunrise/sunset panel would need it, whereas adding it later means re-geocoding every saved location. (Decision 15 refines this into two projections: the payload first becomes a `Candidate` that also keeps `admin2` and `population` for ordering and disambiguation, and only the six fields survive the second projection to a stored `Location`.)
 
 ### 10. Two operations, not one: refresh de-duplicates, location change aborts
 
@@ -154,6 +158,15 @@ Project to exactly the six fields in decision 4. `timezone` is captured now, unu
 ```
 
 Both defects in the proposal fall out of conflating these. The fix is two distinct paths; the simplest implementation keys the hook's state by the active location so a change resets it rather than threading reset logic through the existing reducer. A superseded response must also be discarded on arrival, not merely aborted, since an abort can race a resolution.
+
+These are **two different mechanisms**, not one, and the distinction matters at implementation time:
+
+```
+  keying state by location   → reset to loading on a change  (fixes the stale-across-locations defect)
+  a guard at the setState site → apply a result only if it is still current  (fixes the superseded-response race)
+```
+
+Keying alone does not prevent a request that has already passed its abort point from firing its `setState` under the new location's name. So each request tags the location it fetched for, and on arrival that tag is compared against the currently active location — read through a ref, because the async closure captured a stale value — and the result is discarded on mismatch. The location tag, not the abort, is the source of truth for "is this response still wanted".
 
 ### 11. Minimum viable input modes, but in a named place
 
@@ -213,6 +226,70 @@ Its state machine rhymes with the weather panel's but is not the same:
 
 No `stale` state — there is no prior search worth preserving — and a `no matches` state that is a *success* with zero rows rather than a failure. Worth noting as evidence for the deferred panel-abstraction question: async panels share a skeleton but not a state enum, so an abstraction that imposed `loading | ready | error | stale` on everything would already be wrong at consumer #2.
 
+### 14. A single-slot notice area in `tui-shell`, cleared by the write itself
+
+The `location-settings` spec promises two on-screen warnings — *unreadable config* and *unwritable config* — but the existing surfaces cannot hold them. The unreadable-config warning fires at **startup, in normal mode, with no picker open**, and normal mode's only regions are the weather panel (another capability's state model, whose states are all about the reading) and the footer (bindings only, "never empty," designed as a keymap). There was no home for a normal-mode, non-modal notice.
+
+```
+  ┌──────────────────────────┐
+  │  <WeatherPanel|Picker>   │  content area
+  ├──────────────────────────┤
+  │  ⚠ one line, or nothing  │  ← notice: 1 row present, 0 rows absent
+  ├──────────────────────────┤
+  │  q quit · r refresh · l  │  footer (unchanged)
+  └──────────────────────────┘
+```
+
+So `tui-shell` gains a **notice area**, owned the same way it owns the footer: the shell renders the slot, the consumer supplies the text. The data model is deliberately one field — `notice: string | undefined`. It is a generic slot any future panel can post to, not a queue: no severities, no stacking, no dismiss key.
+
+The behaviour is fixed by the same constraint that killed live-search and auto-refresh — **no injectable clock** (`add-test-harness`). A notice therefore cannot fade on a timer; it is **state-driven**, appearing when a condition holds and clearing when it resolves. That refusal is a feature here: it makes the notice assertable with the harness as-is (real fs + stdin, no time), and it is the same principled line the rest of the change draws.
+
+Two warnings, one rule. Trace both lifecycles and they collapse:
+
+```
+  failed config READ   → set notice
+  failed config WRITE  → set notice
+  successful WRITE     → clear notice     ⇒  a successful config write clears it;
+                                             a failed read or write sets it
+```
+
+A successful selection *is* a successful write, so the "repair" case (unreadable config → user picks a valid location → warning clears) needs no special path. **No dismiss key**: the notice reflects a real unresolved condition and should persist until that condition is actually resolved, which also avoids allocating more of the normal-mode keyspace (open question 4).
+
+When both conditions occur — corrupt file at startup, then a selection whose write also fails — the slot is **single-slot, last-writer-wins**: the second warning ("couldn't save; this session only") replaces the first. It is the more recent and more actionable truth; the still-corrupt file resurfaces on the next launch. Stacking the two would mean committing to the notification framework this change is otherwise declining.
+
+The one coupling this introduces: the notice consumes a viewport row exactly as the footer does, so the "Modal content fits the viewport" requirement must subtract it when present — a notice appearing while the picker is open reflows the candidate list by one row.
+
+### 15. Two shapes — `Candidate` and `Location` — and how rows are kept distinct
+
+A single `Location` type was being asked to be three things with different field requirements: the persisted identity in `config.json`, the active location the panel fetches for, and a search candidate the user picks from. Only the candidate needs `population` (to order, decision 8) and a finer subdivision (to disambiguate); only the persisted identity has to stay minimal (decision 9). Collapsing them produced two defects: the strict parse (task 4.4) requires only `name`/`latitude`/`longitude`, so a valid result can arrive with **no `admin1`** (Singapore, Monaco), yet the header helper assumed one — `"Singapore, undefined"`; and the "no two rows indistinguishable" requirement had no field to lean on, because decision 9 discards everything below `admin1`.
+
+Split the payload into two projections:
+
+```
+   API payload (raw)
+        │ project
+        ▼
+   Candidate  name, admin1?, admin2?, country?, timezone?, lat, lon, population?
+        │ confirm → project again, dropping admin2 + population
+        ▼
+   Location   name, admin1?, country?, timezone?, lat, lon      ← persisted / active
+```
+
+`Candidate` is what the picker renders and sorts; `Location` is what becomes active and is written to disk. This does **not** reopen decision 5: that decision guarded against two competing *active/stored* location types, and `DEFAULT_LOCATION` and a confirmed pick are both `Location`, structurally identical. `Candidate` is a transient search result, a normal second type. It also strengthens decision 9: the projection now runs twice, and `admin2`/`population` — used only to render and order the list — never reach disk.
+
+**`admin1`, `country`, and `timezone` are optional** on both shapes. The strict parser was already correct to require only `name`/`latitude`/`longitude`; it was the type declaration that implied otherwise. One display helper composes the header and rows from whatever is present, dropping absent segments: `San Antonio, Texas` / `Springfield, Missouri, United States` / `Singapore` — never `Singapore, undefined`.
+
+**Keeping rows distinct is a two-tier rule with an absolute floor.** The requirement asserts that no two rows are indistinguishable, so the fallback must be a field that is both always present and always unique — the coordinates:
+
+```
+  rows identical under (name, admin1, country)?
+      ├─ append admin2 where it differs   → "Springfield, Greene County, Missouri"   (readable, usual case)
+      └─ admin2 absent or equal?
+             └─ append coordinates        → "Springfield, Missouri (37.22, −93.30)"   (rare, guarantees the rule)
+```
+
+`admin2` is the human-friendly layer; coordinates are the last resort that makes the guarantee literal rather than best-effort. Because `admin2` is selection-only, two same-state Springfields in different counties persist as the same display string `"Springfield, Missouri"` — acceptable, because their **coordinates differ**, so the reading is correct even when the stored label is ambiguous to a human reading the file.
+
 ## Risks / Trade-offs
 
 - **[Part of the deferred focus-management work arrives early, in `tui-shell` rather than at panel #2]** → Accepted deliberately. A modal overlay is a simpler first customer than two peer panels competing for focus, so the abstraction is arguably better informed here than it would be there. Bounded by decision 11: two modes, no general focus manager.
@@ -246,7 +323,9 @@ Rollback is `git revert`. A stray `config.json` left on disk afterwards is inert
 
 ## Open Questions
 
-- **Candidate ordering: re-sort client-side, or trust the API?** Decision 8 commits to exact-matches-first-then-population and the specs are written to it, but the call is provisional. Trusting API relevance order is defensible and simpler; it just means a 1,156-person village can outrank an 87,675-person city on a `San Antonio` search. Worth confirming before the picker is built, since it is one spec scenario and a comparator either way.
-- **Is two modes enough, or should key routing be general now?** Decision 11 builds the minimum in a named module. The alternative is defining a proper focus/routing contract in this change and having panel #2 be its second consumer rather than its first refactor. Deliberately left open: the answer depends on what panel #2 is, which is still unknown.
-- **Should `location-settings` grow into `user-settings` when units become configurable?** The file schema is shaped so it can (decision 6), but whether the *capability* should be renamed and widened, or a second capability added alongside it, is a question for that change rather than this one.
-- **Does the `l` binding conflict with anything panel #2 will want?** Not blocking. Noted because the normal-mode keyspace is now being allocated without a plan, and this is the second binding after `r`.
+All four were reviewed during exploration. The outcome of each is recorded inline; none blocks implementation.
+
+- **Candidate ordering: re-sort client-side, or trust the API? — RESOLVED, confirmed.** Decision 8 stands and is no longer provisional. Exact-match-first specifically protects the small-hometown case (an exact-name match cannot fall below fuzzy matches), so the residual risk of re-sorting is smaller than the common, broken-looking failure of trusting API relevance order. The comparator is small and already has fixtures in task 4.9.
+- **Is two modes enough, or should key routing be general now? — REVIEWED, staying minimal.** Confirmed decision 11. Designing a focus/routing contract now means designing against a still-unknown panel #2; decision 13's own finding (async panels share a skeleton but not a state enum) is the cautionary evidence that a blind abstraction would likely be wrong at consumer #2. The named module banks the real benefit — panel #2 extends a seam rather than rediscovering the inline-`app.tsx` problem. Hardening added to task 6.1: route by mode via a table/enum so a third mode is additive rather than another branch.
+- **Should `location-settings` grow into `user-settings` when units become configurable? — DEFERRED, correctly.** This is a question for the future change that makes units configurable, not this one. Verified that this change forecloses neither path: the file nesting (decision 6) supports both adding a sibling `unit-settings` capability and renaming/widening to `user-settings`, and the specific name `location-settings` (rather than a premature `settings` catch-all) keeps the sibling option clean.
+- **Does the `l` binding conflict with anything panel #2 will want? — REVIEWED, non-blocking, resolved by construction.** `l` for location is mnemonic and low-regret. The genuine mitigation is not choosing a different key now but decision 11's named routing module, which is exactly where a future conflict surfaces and is reassigned in one place. So this is downstream of the previous question: once the routing module lands, moving `l` if panel #2 wants it is a one-place change.

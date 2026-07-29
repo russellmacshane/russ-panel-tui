@@ -13,6 +13,7 @@ The deciding argument is ambiguity. Users think in city names; the API needs coo
   - A failed fetch after a location change would keep the *previous* city's reading and render it under the *new* city's name, because [`weather-panel.tsx`](../../../src/weather/weather-panel.tsx) reads the location from config while `WeatherReading` carries none. A location change now resets to `loading` instead of preserving a cross-location reading.
   - A location change while a request is in flight is silently dropped by the refresh de-duplication guard in [`use-weather.ts`](../../../src/weather/use-weather.ts). Refresh de-duplicates; a location change aborts and restarts.
 - **Add input modes to `tui-shell`.** The current global bindings actively prevent text entry: `q` quits, `r` refreshes, and `Esc` — the conventional cancel key — also quits, so typing "Portland" fires a spurious refresh and "Albuquerque" exits the app. Key routing becomes mode-scoped, and the footer is derived from the active mode rather than hardcoded.
+- **Add a notice area to `tui-shell`.** The two config warnings (unreadable and unwritable configuration) have no surface today: the unreadable-config warning fires at startup in normal mode, where the only regions are the weather panel — another capability's state model — and a bindings-only footer. A single-line, state-driven notice area holds them, cleared by a successful config write rather than a timer, so no injectable clock is reopened.
 - **Add filesystem isolation to `test-harness`.** Tests point `XDG_CONFIG_HOME` at a temporary directory, so config I/O is exercised against the real filesystem while the developer's own `~/.config` is unreachable — the same intercept-at-the-real-boundary approach as the default-deny `fetch` stub.
 - **Search is triggered by Enter, not per keystroke.** A debounced live search would need a fake clock, reopening a decision `add-test-harness` made deliberately (*"no injectable clock, no injectable timeout"*) for a field users type once.
 
@@ -32,7 +33,7 @@ The deciding argument is ambiguity. Users think in city names; the API needs coo
 
 ### Modified Capabilities
 - `weather-panel`: **BREAKING** — `Fixed location` is replaced by sourcing the location from `location-settings`. Adds the requirement that a location change discards any previous reading rather than presenting it as stale, and extends `Bounded requests` to cover a location change arriving while a request is in flight.
-- `tui-shell`: adds mode-scoped input routing so a text field can receive `q`, `r`, and `Esc` as literal input, and makes the keybinding footer reflect the active mode instead of a fixed string.
+- `tui-shell`: adds mode-scoped input routing so a text field can receive `q`, `r`, and `Esc` as literal input, makes the keybinding footer reflect the active mode instead of a fixed string, and adds a single-line notice area — a slot for the config warnings that has no home in the weather panel or the bindings-only footer.
 - `test-harness`: adds filesystem isolation, so config reads and writes are testable without touching the developer's real config directory.
 
 ## Impact

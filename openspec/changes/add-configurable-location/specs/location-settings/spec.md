@@ -35,11 +35,15 @@ When a search returns candidates, the system SHALL present them as a selectable 
 
 #### Scenario: Presenting candidates
 - **WHEN** a search returns one or more candidates
-- **THEN** each candidate is displayed with its place name, its administrative region, and its country
+- **THEN** each candidate is displayed with its place name, and with its administrative region and its country where those are known, absent parts being omitted rather than shown as an empty value
+
+#### Scenario: A place with no administrative region
+- **WHEN** a candidate has no administrative region, as some city-states and small territories do not
+- **THEN** it is displayed by its place name and whatever other details are known, without a placeholder or an empty region shown
 
 #### Scenario: Distinguishing identically named places
 - **WHEN** two or more candidates share the same place name, region, and country
-- **THEN** the display includes a further distinguishing detail, so that no two rows in the list are indistinguishable from each other
+- **THEN** the display appends a finer administrative subdivision to tell them apart where one is available, and appends their coordinates otherwise, so that no two rows in the list are ever indistinguishable from each other
 
 #### Scenario: Most likely match first
 - **WHEN** a search returns a mixture of exact name matches and looser fuzzy matches
@@ -103,7 +107,11 @@ The system SHALL persist the active location as resolved coordinates together wi
 
 #### Scenario: Coordinates are stored, not the query
 - **WHEN** a location has been persisted
-- **THEN** the stored record contains the latitude and longitude, the place name, its region, and its country, and does not rely on re-running the user's original search text
+- **THEN** the stored record contains the latitude and longitude and the place name, together with its region and country where those are known, and does not rely on re-running the user's original search text
+
+#### Scenario: Selection-only details are not persisted
+- **WHEN** a candidate that was disambiguated by a finer subdivision or by population is persisted
+- **THEN** the stored record keeps only the location's own identity and coordinates; the finer subdivision and population used to choose and order candidates are not written to the file
 
 #### Scenario: Configuration file location
 - **WHEN** the system reads or writes the configuration
