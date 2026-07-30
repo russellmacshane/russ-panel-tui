@@ -1,20 +1,11 @@
-# weather-panel Specification
+## REMOVED Requirements
 
-## Purpose
-The weather-panel capability provides the command center's current-conditions panel. It covers where the reading comes from (Open-Meteo, no API key), how the panel is refreshed, and the display states it moves through — loading, ready, error, and stale — including the rule that a failed refresh keeps the last good reading on screen rather than discarding it.
+### Requirement: Fixed location
+**Reason**: The location is now chosen by the user through the `location-settings` capability. This requirement did not merely omit configurability — its scenarios actively forbade it, stating that "no interface is offered for changing the location" and that the app "does not read a location from arguments, environment, or a config file". Both statements are now false by design.
 
-## Requirements
+**Migration**: The hardcoded `LOCATION` constant becomes `DEFAULT_LOCATION`, used only as a fallback when no configuration exists. The panel receives its location from `location-settings` rather than importing a constant. No user data migration is required: no configuration file existed before this change, so every user starts as a first-run user and is moved from the previous hardcoded location to the shipped default until they choose otherwise.
 
-### Requirement: Current conditions source
-The system SHALL retrieve current weather conditions from the Open-Meteo API without requiring an API key or user credentials.
-
-#### Scenario: Fetching on launch
-- **WHEN** the app starts
-- **THEN** the panel requests current conditions from Open-Meteo for the configured location
-
-#### Scenario: No credentials required
-- **WHEN** the app is run on a machine with no configuration, environment variables, or stored secrets
-- **THEN** the weather request succeeds, requiring only network access
+## ADDED Requirements
 
 ### Requirement: Location supplied by settings
 The panel SHALL request weather for the location supplied by the `location-settings` capability, and SHALL display the details of that same location alongside the reading.
@@ -42,12 +33,7 @@ When the active location changes, the panel SHALL discard any existing reading a
 - **WHEN** the user selects a location that was active earlier in the session
 - **THEN** a fresh request is issued rather than an earlier reading being reused
 
-### Requirement: Loading state
-The panel SHALL indicate that a reading is being retrieved when it has no data to display yet.
-
-#### Scenario: First fetch in progress
-- **WHEN** the app has started and the initial request has not yet completed
-- **THEN** the panel displays a loading indication rather than an empty area or placeholder values
+## MODIFIED Requirements
 
 ### Requirement: Ready state display
 When a reading has been retrieved successfully, the panel SHALL display the temperature, a human-readable description of conditions, the location the reading was retrieved for, and the time it was retrieved.
@@ -59,28 +45,6 @@ When a reading has been retrieved successfully, the panel SHALL display the temp
 #### Scenario: Unrecognized conditions code
 - **WHEN** the API returns a weather code the system has no text mapping for
 - **THEN** the panel still displays the temperature and indicates the raw code, rather than rendering nothing or an error
-
-### Requirement: Manual refresh
-The panel SHALL retrieve a fresh reading when the user presses `r`. Refresh requests SHALL NOT overlap.
-
-#### Scenario: Refreshing on demand
-- **WHEN** the user presses `r` while a reading is displayed
-- **THEN** a new request is issued and, on success, the displayed reading and its retrieval time are updated
-
-#### Scenario: Refresh pressed while a request is in flight
-- **WHEN** the user presses `r` while a request is already in progress
-- **THEN** the key press is ignored and no second concurrent request is issued
-
-### Requirement: Error state
-When no reading has ever been retrieved successfully and a request fails, the panel SHALL display an error that explains the failure and indicates how to retry.
-
-#### Scenario: Initial fetch fails
-- **WHEN** the first weather request fails because the network or the API is unavailable
-- **THEN** the panel displays an error message and indicates that `r` retries, and the application remains running and quittable
-
-#### Scenario: Unexpected response shape
-- **WHEN** the API returns a response that is missing expected fields or is not valid JSON
-- **THEN** the panel treats it as a failed request and displays the error state rather than rendering empty or undefined values
 
 ### Requirement: Stale state
 When a refresh for the active location fails after a reading for that same location has previously been retrieved successfully, the panel SHALL continue to display the last good reading, marked as stale, rather than discarding it. This SHALL apply only while the location is unchanged; a change of location is governed by "Location change discards the previous reading".

@@ -1,9 +1,9 @@
 import {
-	LOCATION,
 	REQUEST_TIMEOUT_MS,
 	TEMPERATURE_SYMBOL,
 	TEMPERATURE_UNIT,
 } from '../config.js';
+import type {Location} from '../location/types.js';
 
 const ENDPOINT = 'https://api.open-meteo.com/v1/forecast';
 
@@ -22,11 +22,12 @@ export type WeatherReading = {
  * hung connection cannot strand the panel in its loading state.
  */
 export async function fetchCurrentWeather(
+	location: Location,
 	signal?: AbortSignal,
 ): Promise<WeatherReading> {
 	const url = new URL(ENDPOINT);
-	url.searchParams.set('latitude', String(LOCATION.latitude));
-	url.searchParams.set('longitude', String(LOCATION.longitude));
+	url.searchParams.set('latitude', String(location.latitude));
+	url.searchParams.set('longitude', String(location.longitude));
 	url.searchParams.set('current', 'temperature_2m,weather_code');
 	url.searchParams.set('temperature_unit', TEMPERATURE_UNIT);
 

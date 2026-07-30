@@ -5,9 +5,12 @@ export default defineConfig({
 	// test/support/ and carry their own tests.
 	test: {
 		include: ['src/**/*.test.{ts,tsx}', 'test/**/*.test.{ts,tsx}'],
-		// Installs the default-deny fetch stub before any test runs, so an
-		// unprogrammed request can never reach the network.
-		setupFiles: ['./test/support/setup.ts'],
+		// `config-fs.ts` runs first: it points `XDG_CONFIG_HOME` at a disposable
+		// directory at module load, before `setup.ts` or any test file can
+		// resolve a config path. `setup.ts` installs the default-deny fetch stub
+		// before any test runs, so an unprogrammed request can never reach the
+		// network.
+		setupFiles: ['./test/support/config-fs.ts', './test/support/setup.ts'],
 		// `client.ts` stamps readings with `new Date()` and the panel formats
 		// them with `toLocaleTimeString()`. Pinning the zone keeps any
 		// incidental formatting identical on every machine and in CI.

@@ -6,6 +6,7 @@ unchanged — if it can't, fix the harness rather than working around it.
 | File | What it gives you |
 | --- | --- |
 | `setup.ts` | Registered as Vitest `setupFiles`. Installs the fetch stub before every test, tears down renders and resets the stub after. Not imported directly by tests. |
+| `config-fs.ts` | Registered as Vitest `setupFiles`, ahead of `setup.ts`. Points `XDG_CONFIG_HOME` at a disposable directory so config reads/writes through the real resolved path never touch `~/.config`. Also exports `writeMalformedConfig` and `breakNextConfigWrite` for simulating an unreadable or unwritable config. |
 | `fetch-stub.ts` | A default-deny replacement for `globalThis.fetch`, plus deferred requests you settle on demand. |
 | `fake-terminal.ts` | `FakeStdout` (settable size, real `resize` emit, frame capture) and `FakeStdin`. |
 | `render.ts` | `render()` — mounts an Ink component against the fakes. |
@@ -29,6 +30,16 @@ Two rules:
 2. **`await waitUntilRenderFlush()`, never `await delay(50)`.** Ink throttles
    renders at `maxFps: 30`, so frame assertions without an explicit flush can
    coalesce. Sleeps are the classic source of flaky Ink tests.
+
+One more rule, for config: **never pass an explicit path to `config-store.ts`'s
+functions from an app-level or picker test.** Calling them with no argument is
+what proves `XDG_CONFIG_HOME` isolation actually works end-to-end; passing a
+path bypasses that seam and proves nothing about the real resolution. (Direct,
+path-supplied testing of `config-store.ts` itself is the exception —
+`config-store.test.ts` already covers that.) Use `writeMalformedConfig` and
+`breakNextConfigWrite` from `config-fs.ts` to put the config file into an
+invalid or unwritable state; both act on the real resolved path and clean up
+after themselves.
 
 ## Why this replaces `ink-testing-library`
 

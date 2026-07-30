@@ -1,14 +1,21 @@
 import {Box, Text} from 'ink';
-import {LOCATION} from '../config.js';
+import {formatLocation} from '../location/format.js';
+import type {Location} from '../location/types.js';
 import {describeWeatherCode} from './codes.js';
 import type {WeatherReading} from './client.js';
 import type {WeatherState} from './use-weather.js';
 
-export function WeatherPanel({state}: {state: WeatherState}) {
+export function WeatherPanel({
+	location,
+	state,
+}: {
+	location: Location;
+	state: WeatherState;
+}) {
 	return (
 		<Box flexDirection="column" borderStyle="round" paddingX={1}>
 			<Text bold>WEATHER</Text>
-			<Text dimColor>{LOCATION.name}</Text>
+			<Text dimColor>{formatLocation(location)}</Text>
 			<Box marginTop={1} flexDirection="column">
 				{renderBody(state)}
 			</Box>

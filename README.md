@@ -14,12 +14,15 @@ npm start       # run the app (node dist/cli.js)
 
 The app takes over your terminal (alternate screen buffer) and stays running until you quit. It restores your screen and scrollback on the way out.
 
-| Key      | Action                    |
-| -------- | ------------------------- |
-| `q`, Esc | quit                      |
-| `r`      | refresh the weather panel |
+| Key   | Action                                          |
+| ----- | ------------------------------------------------ |
+| `q`   | quit (normal mode only)                          |
+| `r`   | refresh the weather panel                        |
+| `l`   | open the location search                         |
+| `Esc` | cancel the location search, changing nothing     |
 
-Ctrl-C also quits.
+Ctrl-C quits from any mode, including while the location search is open.
+San Antonio, Texas is the default location until you set one with `l`.
 
 ## Testing
 
@@ -53,16 +56,39 @@ Two things worth knowing before you write a test:
 
 **Weather** — current conditions from [Open-Meteo](https://open-meteo.com/), which needs no API key. It fetches once on launch and then only when you press `r`. If a refresh fails, the last good reading stays on screen marked as stale rather than disappearing.
 
-> **Known limitation:** the location is hardcoded. Edit `LOCATION` in [`src/config.ts`](src/config.ts) to point somewhere else. Making it configurable is deferred to a later change.
+**Setting the location** — press `l` to open the location search. Type a city name and press Enter to search (typing alone does not trigger a request); pick a result with the arrow keys and Enter, or press Escape to cancel and leave things as they were. The selected location is used immediately and saved for next launch. San Antonio, Texas is the default and is only ever a fallback: until you pick a location nothing is written to disk.
+
+## Configuration
+
+The location is stored at `$XDG_CONFIG_HOME/russ-panel-tui/config.json`, falling back to `~/.config/russ-panel-tui/config.json` when `XDG_CONFIG_HOME` is unset.
+
+```json
+{
+  "location": {
+    "name": "San Antonio",
+    "admin1": "Texas",
+    "country": "United States",
+    "latitude": 29.42412,
+    "longitude": -98.49363,
+    "timezone": "America/Chicago"
+  }
+}
+```
+
+`name`, `latitude`, and `longitude` are required; `admin1`, `country`, and `timezone` are optional — a city-state like Singapore has no `admin1`. The location lives under a `location` key so other settings can be added later without reshaping the file.
+
+If the file doesn't exist, the app runs on the default location and writes nothing. If it exists but is malformed or unreadable, the app falls back to the default, shows a one-line warning, and leaves the file untouched until you pick a new location through `l`. If saving a new selection fails (an unwritable config directory, say), the selection still applies for the current session, and a warning notes that it won't be remembered.
 
 ## Layout
 
 ```
 src/
   cli.tsx       entry point; owns terminal state and exit paths
-  app.tsx       shell: viewport sizing, key bindings, footer
+  app.tsx       shell: viewport sizing, active location, key bindings, footer
   terminal.ts   alternate screen buffer enter/restore
-  config.ts     location, units, request timeout
+  config.ts     default location, units, request timeout
+  location/     geocoding client, location picker, config file read/write
+  shell/        input modes, notice area, viewport-bounding helpers
   weather/      Open-Meteo client, state machine, panel
   *.test.ts(x)  tests, colocated with what they cover
 test/

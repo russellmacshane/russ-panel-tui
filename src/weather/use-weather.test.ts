@@ -8,8 +8,17 @@ import {
 	respondWithJson,
 } from '../../test/support/fetch-stub.js';
 import {render} from '../../test/support/render.js';
-import {REQUEST_TIMEOUT_MS} from '../config.js';
+import {DEFAULT_LOCATION, REQUEST_TIMEOUT_MS} from '../config.js';
+import type {Location} from '../location/types.js';
 import {useWeather, type WeatherState} from './use-weather.js';
+
+const OTHER_LOCATION: Location = {
+	name: 'Portland',
+	admin1: 'Oregon',
+	country: 'United States',
+	latitude: 45.5152,
+	longitude: -122.6784,
+};
 
 /**
  * These tests drive the state machine through the real client and the real
@@ -25,28 +34,33 @@ type Harness = {
 	/** The most recent state. */
 	state: () => WeatherState;
 	refresh: () => void;
+	/** Re-render with a new active location, simulating a location change. */
+	rerender: (location: Location) => void;
 	flush: () => Promise<unknown>;
 	unmount: () => void;
 };
 
-function renderUseWeather(): Harness {
+function renderUseWeather(location: Location = DEFAULT_LOCATION): Harness {
 	const states: WeatherState[] = [];
 	let refresh = () => {};
 
-	function Probe() {
-		const weather = useWeather();
+	function Probe({location}: {location: Location}) {
+		const weather = useWeather(location);
 		states.push(weather.state);
 		refresh = weather.refresh;
 		return createElement(Text, null, weather.state.status);
 	}
 
-	const harness = render(createElement(Probe));
+	const harness = render(createElement(Probe, {location}));
 
 	return {
 		states,
 		state: () => states.at(-1)!,
 		refresh: () => {
 			refresh();
+		},
+		rerender: (newLocation: Location) => {
+			harness.rerender(createElement(Probe, {location: newLocation}));
 		},
 		flush: () => harness.waitUntilRenderFlush(),
 		unmount: harness.unmount,
@@ -98,15 +112,15 @@ describe('initial load', () => {
 	});
 });
 
-describe('refreshing', () => {
-	async function mountReady(temperature = 71.4) {
-		respondWithJson(reading(temperature));
-		const harness = renderUseWeather();
-		await harness.flush();
-		expect(harness.state().status).toBe('ready');
-		return harness;
-	}
+async function mountReady(temperature = 71.4) {
+	respondWithJson(reading(temperature));
+	const harness = renderUseWeather();
+	await harness.flush();
+	expect(harness.state().status).toBe('ready');
+	return harness;
+}
 
+describe('refreshing', () => {
 	test('a successful refresh replaces the reading', async () => {
 		const harness = await mountReady(71.4);
 
@@ -206,6 +220,108 @@ describe('refreshing', () => {
 		harness.refresh();
 		await harness.flush();
 		expect(fetchCallCount()).toBe(2);
+	});
+});
+
+describe('location changes', () => {
+	test('a location change while a request is pending issues a new request rather than being dropped', async () => {
+		const arrivedFirst = respondWhenTold();
+		const harness = renderUseWeather();
+		await arrivedFirst;
+		expect(fetchCallCount()).toBe(1);
+
+		respondWithJson(reading(60));
+		harness.rerender(OTHER_LOCATION);
+		await harness.flush();
+
+		expect(fetchCallCount()).toBe(2);
+		expect(harness.state()).toMatchObject({
+			status: 'ready',
+			reading: {temperature: 60},
+		});
+	});
+
+	test('a failed first fetch after a location change shows error, not stale', async () => {
+		const harness = await mountReady(71.4);
+
+		respondWithError('Open-Meteo is unreachable');
+		harness.rerender(OTHER_LOCATION);
+		await harness.flush();
+
+		expect(harness.state()).toEqual({
+			status: 'error',
+			message: 'Open-Meteo is unreachable',
+		});
+	});
+
+	test('a superseded response is ignored once the location has moved on', async () => {
+		const arrivedFirst = respondWhenTold();
+		const harness = renderUseWeather();
+		const firstRequest = await arrivedFirst;
+
+		respondWithJson(reading(50));
+		harness.rerender(OTHER_LOCATION);
+		await harness.flush();
+		expect(harness.state()).toMatchObject({
+			status: 'ready',
+			reading: {temperature: 50},
+		});
+
+		// The old location's request settles late — after abort, but abort can
+		// race an already-in-flight resolution, so this must be caught by the
+		// location tag rather than relying on the abort alone.
+		firstRequest.resolveJson(reading(99));
+		await harness.flush();
+
+		expect(harness.state()).toMatchObject({
+			status: 'ready',
+			reading: {temperature: 50},
+		});
+	});
+
+	test('returning to a previous location issues a fresh request rather than reusing its old reading', async () => {
+		const harness = await mountReady(71.4);
+
+		respondWithJson(reading(60));
+		harness.rerender(OTHER_LOCATION);
+		await harness.flush();
+		expect(fetchCallCount()).toBe(2);
+
+		respondWithJson(reading(71.4));
+		harness.rerender(DEFAULT_LOCATION);
+		await harness.flush();
+
+		expect(fetchCallCount()).toBe(3);
+		expect(harness.state()).toMatchObject({
+			status: 'ready',
+			reading: {temperature: 71.4},
+		});
+	});
+
+	test('a stale reading is discarded on location change, not carried over relabelled', async () => {
+		const harness = await mountReady(71.4);
+
+		respondWithError('Open-Meteo is unreachable');
+		harness.refresh();
+		await harness.flush();
+		expect(harness.state().status).toBe('stale');
+
+		const arrivedNext = respondWhenTold();
+		harness.rerender(OTHER_LOCATION);
+		const nextRequest = await arrivedNext;
+		await harness.flush();
+
+		// The new location starts fresh at loading — no stale reading or
+		// message survives from the location it replaced.
+		expect(harness.state()).toEqual({status: 'loading'});
+
+		nextRequest.resolveJson(reading(55));
+		await harness.flush();
+
+		expect(harness.state()).toMatchObject({
+			status: 'ready',
+			reading: {temperature: 55},
+		});
 	});
 });
 
