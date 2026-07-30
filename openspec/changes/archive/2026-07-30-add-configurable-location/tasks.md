@@ -86,4 +86,4 @@
 - [x] 9.2 Confirm every scenario in the four delta specs has a corresponding test, or is explicitly recorded as a manual check in the way `add-test-harness` recorded its three.
 - [x] 9.3 Run the app manually: default location renders on first launch with no config file present; `l` opens the picker; searching `Springfield` shows distinguishable ordered candidates; selecting one refetches weather; the choice survives a restart; deleting the config file returns to San Antonio.
 - [x] 9.4 Confirm no config file is created by simply launching and quitting without selecting a location.
-- [ ] 9.5 Confirm CI passes on the pull request. (Requires an actual PR push — not done here.)
+- [x] 9.5 Confirm CI passes on the pull request.
