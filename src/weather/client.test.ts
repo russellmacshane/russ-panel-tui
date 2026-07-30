@@ -6,7 +6,11 @@ import {
 	respondWithJson,
 	respondWithStatus,
 } from '../../test/support/fetch-stub.js';
-import {LOCATION, TEMPERATURE_SYMBOL, TEMPERATURE_UNIT} from '../config.js';
+import {
+	DEFAULT_LOCATION,
+	TEMPERATURE_SYMBOL,
+	TEMPERATURE_UNIT,
+} from '../config.js';
 import {fetchCurrentWeather} from './client.js';
 
 /** A minimal well-formed Open-Meteo payload. */
@@ -22,14 +26,18 @@ describe('the request', () => {
 	test('carries the configured latitude, longitude, and temperature unit', async () => {
 		respondWithJson(payload());
 
-		await fetchCurrentWeather();
+		await fetchCurrentWeather(DEFAULT_LOCATION);
 
 		const url = new URL(fetchCalls()[0]!);
 		expect(url.origin + url.pathname).toBe(
 			'https://api.open-meteo.com/v1/forecast',
 		);
-		expect(url.searchParams.get('latitude')).toBe(String(LOCATION.latitude));
-		expect(url.searchParams.get('longitude')).toBe(String(LOCATION.longitude));
+		expect(url.searchParams.get('latitude')).toBe(
+			String(DEFAULT_LOCATION.latitude),
+		);
+		expect(url.searchParams.get('longitude')).toBe(
+			String(DEFAULT_LOCATION.longitude),
+		);
 		expect(url.searchParams.get('temperature_unit')).toBe(TEMPERATURE_UNIT);
 		expect(url.searchParams.get('current')).toBe(
 			'temperature_2m,weather_code',
@@ -41,7 +49,7 @@ describe('the request', () => {
 	test('carries no key or credential', async () => {
 		respondWithJson(payload());
 
-		await fetchCurrentWeather();
+		await fetchCurrentWeather(DEFAULT_LOCATION);
 
 		const url = new URL(fetchCalls()[0]!);
 		const names = [...url.searchParams.keys()];
@@ -64,7 +72,7 @@ describe('transport failures', () => {
 	test('a non-ok status throws with the status and status text', async () => {
 		respondWithStatus(503, 'Service Unavailable');
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo returned 503 Service Unavailable',
 		);
 	});
@@ -72,7 +80,7 @@ describe('transport failures', () => {
 	test('a body that is not valid JSON throws', async () => {
 		respondWithBody('<html>gateway timeout</html>');
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo returned a response that is not valid JSON',
 		);
 	});
@@ -80,7 +88,9 @@ describe('transport failures', () => {
 	test('a rejected request propagates', async () => {
 		respondWithError('fetch failed', 'TypeError');
 
-		await expect(fetchCurrentWeather()).rejects.toThrow('fetch failed');
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
+			'fetch failed',
+		);
 	});
 });
 
@@ -90,7 +100,7 @@ describe('defensive parsing', () => {
 	test('a missing `current` throws', async () => {
 		respondWithJson({current_units: {temperature_2m: '°F'}});
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo response is missing current conditions',
 		);
 	});
@@ -98,7 +108,7 @@ describe('defensive parsing', () => {
 	test('a null `current` throws', async () => {
 		respondWithJson({current: null});
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo response is missing current conditions',
 		);
 	});
@@ -106,7 +116,7 @@ describe('defensive parsing', () => {
 	test('a missing temperature throws', async () => {
 		respondWithJson({current: {weather_code: 3}});
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo response is missing a usable temperature',
 		);
 	});
@@ -114,7 +124,7 @@ describe('defensive parsing', () => {
 	test('a non-numeric temperature throws', async () => {
 		respondWithJson({current: {temperature_2m: '71.4', weather_code: 3}});
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo response is missing a usable temperature',
 		);
 	});
@@ -126,7 +136,7 @@ describe('defensive parsing', () => {
 			'{"current":{"temperature_2m":1e999,"weather_code":3}}',
 		);
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo response is missing a usable temperature',
 		);
 	});
@@ -134,7 +144,7 @@ describe('defensive parsing', () => {
 	test('a missing weather code throws', async () => {
 		respondWithJson({current: {temperature_2m: 71.4}});
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo response is missing a weather code',
 		);
 	});
@@ -142,7 +152,7 @@ describe('defensive parsing', () => {
 	test('a non-numeric weather code throws', async () => {
 		respondWithJson({current: {temperature_2m: 71.4, weather_code: 'rain'}});
 
-		await expect(fetchCurrentWeather()).rejects.toThrow(
+		await expect(fetchCurrentWeather(DEFAULT_LOCATION)).rejects.toThrow(
 			'Open-Meteo response is missing a weather code',
 		);
 	});
@@ -152,7 +162,7 @@ describe('a successful reading', () => {
 	test('reports the temperature and weather code from the response', async () => {
 		respondWithJson(payload());
 
-		const reading = await fetchCurrentWeather();
+		const reading = await fetchCurrentWeather(DEFAULT_LOCATION);
 
 		expect(reading.temperature).toBe(71.4);
 		expect(reading.weatherCode).toBe(3);
@@ -163,7 +173,7 @@ describe('a successful reading', () => {
 			payload({current_units: {temperature_2m: 'degrees fahrenheit'}}),
 		);
 
-		const reading = await fetchCurrentWeather();
+		const reading = await fetchCurrentWeather(DEFAULT_LOCATION);
 
 		expect(reading.temperatureUnit).toBe('degrees fahrenheit');
 	});
@@ -171,7 +181,7 @@ describe('a successful reading', () => {
 	test('falls back to the configured symbol when `current_units` is absent', async () => {
 		respondWithJson({current: {temperature_2m: 71.4, weather_code: 3}});
 
-		const reading = await fetchCurrentWeather();
+		const reading = await fetchCurrentWeather(DEFAULT_LOCATION);
 
 		expect(reading.temperatureUnit).toBe(TEMPERATURE_SYMBOL);
 	});
@@ -179,7 +189,7 @@ describe('a successful reading', () => {
 	test('falls back when the reported unit is not a string', async () => {
 		respondWithJson(payload({current_units: {temperature_2m: 12}}));
 
-		const reading = await fetchCurrentWeather();
+		const reading = await fetchCurrentWeather(DEFAULT_LOCATION);
 
 		expect(reading.temperatureUnit).toBe(TEMPERATURE_SYMBOL);
 	});
@@ -189,7 +199,7 @@ describe('a successful reading', () => {
 	test('stamps the time we retrieved it', async () => {
 		respondWithJson(payload());
 
-		const reading = await fetchCurrentWeather();
+		const reading = await fetchCurrentWeather(DEFAULT_LOCATION);
 
 		expect(reading.retrievedAt).toBeInstanceOf(Date);
 		expect(Number.isNaN(reading.retrievedAt.getTime())).toBe(false);
@@ -200,7 +210,7 @@ describe('a successful reading', () => {
 		const controller = new AbortController();
 
 		await expect(
-			fetchCurrentWeather(controller.signal),
+			fetchCurrentWeather(DEFAULT_LOCATION, controller.signal),
 		).resolves.toMatchObject({temperature: 71.4});
 	});
 });

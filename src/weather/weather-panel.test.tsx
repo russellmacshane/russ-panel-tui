@@ -1,6 +1,7 @@
 import {expect, test} from 'vitest';
 import {render} from '../../test/support/render.js';
-import {LOCATION} from '../config.js';
+import {DEFAULT_LOCATION} from '../config.js';
+import {formatLocation} from '../location/format.js';
 import type {WeatherReading} from './client.js';
 import {WeatherPanel} from './weather-panel.js';
 
@@ -19,10 +20,13 @@ function reading(overrides: Partial<WeatherReading> = {}): WeatherReading {
  * fail these assertions for reasons that have nothing to do with the panel.
  */
 async function renderPanel(state: Parameters<typeof WeatherPanel>[0]['state']) {
-	const harness = render(<WeatherPanel state={state} />, {
-		columns: 100,
-		rows: 30,
-	});
+	const harness = render(
+		<WeatherPanel location={DEFAULT_LOCATION} state={state} />,
+		{
+			columns: 100,
+			rows: 30,
+		},
+	);
 	await harness.waitUntilRenderFlush();
 	return harness.lastFrame();
 }
@@ -31,7 +35,7 @@ test('every state shows the panel heading and location', async () => {
 	const frame = await renderPanel({status: 'loading'});
 
 	expect(frame).toContain('WEATHER');
-	expect(frame).toContain(LOCATION.name);
+	expect(frame).toContain(formatLocation(DEFAULT_LOCATION));
 });
 
 test('loading shows a loading indication and no placeholder values', async () => {
@@ -53,7 +57,7 @@ test('ready shows the temperature with its unit, the conditions, and a timestamp
 
 	expect(frame).toContain('71.4°F');
 	expect(frame).toContain('Overcast');
-	expect(frame).toContain(LOCATION.name);
+	expect(frame).toContain(formatLocation(DEFAULT_LOCATION));
 	// Asserts a timestamp is present, not what it reads: `toLocaleTimeString`
 	// output varies by machine and locale, so pinning it would be a test that
 	// passes locally and fails elsewhere.

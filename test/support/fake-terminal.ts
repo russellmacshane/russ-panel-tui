@@ -124,4 +124,6 @@ export const keys = {
 	enter: '\r',
 	up: '\u001B[A',
 	down: '\u001B[B',
+	/** `0x7F` (DEL) — what a real terminal sends for Backspace; `parse-keypress.js` maps it to the `backspace` key name. */
+	backspace: '\u007F',
 } as const;

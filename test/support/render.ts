@@ -69,7 +69,15 @@ export function render(node: ReactElement, options: RenderOptions = {}): Rendere
 		// Auto-detection writes a `CSI ? u` query into our frames and holds a
 		// 200ms timer open waiting for a reply no fake terminal will send.
 		kittyKeyboard: {mode: 'disabled'},
-		exitOnCtrlC: options.exitOnCtrlC,
+		// Omitted entirely rather than passed as `undefined` when the caller
+		// doesn't set it: Ink's own `render()` spreads this options object
+		// verbatim over its defaults, so an explicit `exitOnCtrlC: undefined`
+		// key clobbers Ink's own default of `true` instead of falling back to
+		// it — silently disabling the Ctrl-C escape hatch in every test that
+		// doesn't opt in.
+		...(options.exitOnCtrlC === undefined
+			? {}
+			: {exitOnCtrlC: options.exitOnCtrlC}),
 	});
 
 	const rendered: Rendered = {

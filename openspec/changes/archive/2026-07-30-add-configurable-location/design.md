@@ -301,6 +301,8 @@ Split the payload into two projections:
 - **[Tests that assert the picker's rendered rows calcify its layout]** → Same mitigation as `add-test-harness` chose: assert against spec scenarios (candidates are distinguishable, exact matches come first) rather than exact frame text.
 - **[Two location types if the default and a geocoded pick diverge]** → Prevented by decision 5: one shape, used for both.
 
+**`test-harness` — not automatable (1):** "Disposable directories are cleaned up" (the `afterAll` sweep in `test/support/config-fs.ts`) can't be asserted from inside the suite whose own teardown it is — the same category `add-test-harness` recorded for `tui-shell`'s "scrollback is left untouched". Verified manually: running the suite leaves no stray directory under the OS temp root afterward.
+
 ## Migration Plan
 
 No data migration. No configuration file format exists prior to this change, so there is no old format to read and every user is a first-run user.
