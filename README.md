@@ -4,7 +4,22 @@ Goal of this project is to create a TUI Command Center using openspec and claude
 
 Built with [Ink](https://github.com/vadimdemedes/ink) (React for the terminal) on plain Node + TypeScript.
 
-## Run it
+## Install
+
+Published as [`@rmacshane-lw/russ-panel-tui`](https://www.npmjs.com/package/@rmacshane-lw/russ-panel-tui) on npm. Requires Node >=22.
+
+```sh
+npm i -g @rmacshane-lw/russ-panel-tui   # install globally
+russ-panel                              # run it
+```
+
+Or run it without installing:
+
+```sh
+npx @rmacshane-lw/russ-panel-tui
+```
+
+## Run it from a checkout
 
 ```sh
 npm install     # install dependencies

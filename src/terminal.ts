@@ -10,9 +10,17 @@ const SHOW_CURSOR = `${ESC}[?25h`;
 
 let active = false;
 
-/** Switch to the alternate screen buffer and hide the cursor. */
+/**
+ * Switch to the alternate screen buffer and hide the cursor.
+ *
+ * A no-op when standard output is not an interactive terminal: writing these
+ * sequences into a redirected file or pipe would pollute captured output with
+ * escape codes. Because `active` is left `false` in that case, `restore()`'s
+ * existing idempotency guard is sufficient on its own — no matching TTY check
+ * is needed there.
+ */
 export function enter(): void {
-	if (active) {
+	if (active || !process.stdout.isTTY) {
 		return;
 	}
 

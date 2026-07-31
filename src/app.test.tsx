@@ -128,11 +128,20 @@ function springfieldResult(): Record<string, unknown> {
 	};
 }
 
+// Ink styles frame content with ANSI escape codes (bold, color, dim), which
+// are invisible width but still count toward `String.prototype.length`.
+// Measuring raw length is only safe when color happens to be off; stripping
+// first makes the measurement correct regardless of the environment's color
+// support (`FORCE_COLOR`/`COLORTERM`), rather than accidentally depending on it.
+const ANSI_ESCAPE_PATTERN = /\[[0-9;?]*[a-zA-Z]/g;
+
 function dimensions(frame: string) {
 	const lines = frame.split('\n');
 	return {
 		rows: lines.length,
-		widest: Math.max(...lines.map(line => line.length)),
+		widest: Math.max(
+			...lines.map(line => line.replace(ANSI_ESCAPE_PATTERN, '').length),
+		),
 	};
 }
 
