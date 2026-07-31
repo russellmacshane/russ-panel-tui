@@ -79,10 +79,10 @@ Two independent failures — see design.md decision 9. Section 2a covers escape-
 - [x] 7.2 Install globally from the registry on a clean environment (a container or a machine that has never had the local tarball) and confirm `russ-panel` launches
 - [x] 7.3 Confirm the published tarball contents by fetching it from the registry rather than trusting the local `npm pack` output
 - [x] 7.4 Confirm no provenance badge appears, as expected for a manual publish, so its absence is not later mistaken for a defect
-- [ ] 7.5 Confirm `.github/workflows/ci.yml` is unmodified by this change and still passes on the branch — file is unmodified (confirmed); "still passes on the branch" needs an actual push, not yet done
+- [x] 7.5 Confirm `.github/workflows/ci.yml` is unmodified by this change and still passes on the branch — unmodified, and CI run #3 (30650788854) passed on `development` after pushing this change
 
 ## 8. Close out
 
-- [ ] 8.1 Confirm CI is green on the branch — blocked on committing and pushing this change, not yet done
+- [x] 8.1 Confirm CI is green on the branch — CI run #3 (30650788854) passed after pushing commit 9ca7e06
 - [x] 8.2 Record the resolved answers in design.md where implementation contradicted an assumption — in particular the shebang result from 1.2 and the license decision from 4.1
 - [x] 8.3 Confirm the eleven deferred questions in design.md's Open Questions section are still accurate, and that `publish-from-ci` is still listed by `openspec list` as unfinished
