@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-07-30
+goal: Publish russ-panel-tui to npm as @rmacshane-lw/russ-panel-tui v0.0.1 by
+  hand, validated locally via npm pack first. No CI/CD.

@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-07-30
+goal: Move the manual npm publish into GitHub Actions with trusted publishing
+  (OIDC), automated version/tag handling, and provenance.

@@ -1,15 +1,37 @@
 {
-  "name": "russ-panel-tui",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@rmacshane-lw/russ-panel-tui",
+  "version": "0.0.1",
+  "description": "An Ink/React terminal UI command center, starting with a live weather panel.",
+  "keywords": ["tui", "cli", "terminal", "ink", "react", "weather", "command-center"],
+  "author": "Russ MacShane",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/russellmacshane/russ-panel-tui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/russellmacshane/russ-panel-tui/issues"
+  },
+  "homepage": "https://github.com/russellmacshane/russ-panel-tui#readme",
   "type": "module",
+  "bin": {
+    "russ-panel": "./dist/cli.js"
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/cli.js",
     "typecheck": "tsc --project tsconfig.test.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run build && npm run typecheck && npm test"
   },
   "dependencies": {
     "ink": "^7.0.0",
