@@ -91,14 +91,14 @@ Ordered last deliberately. Enabling this before the pipeline is proven removes t
 
 - [x] 8.1 On the package's registry settings, enable "require two-factor authentication and disallow tokens"
 - [x] 8.2 Confirm a subsequent release still works — either by the next real release or by confirming the setting does not affect the OIDC path, since token restrictions apply to token authentication only
-- [ ] 8.3 Revoke the granular access token that published `0.0.1` (created because the account's passkey-based 2FA has no OTP path for a CLI publish — see `publish-to-npm-manually` task 6.4)
-- [ ] 8.4 Confirm no other token in the account can publish this package
-- [ ] 8.5 Confirm that publishing from a maintainer's machine is now refused, so the intended posture is real rather than assumed
+- [x] 8.3 Revoke the granular access token that published `0.0.1` (created because the account's passkey-based 2FA has no OTP path for a CLI publish — see `publish-to-npm-manually` task 6.4)
+- [x] 8.4 Confirm no other token in the account can publish this package
+- [x] 8.5 Confirm that publishing from a maintainer's machine is now refused, so the intended posture is real rather than assumed
 
 ## 9. Close out
 
-- [ ] 9.1 Confirm CI is green on `main` after every change in this proposal has landed
-- [ ] 9.2 Record the first-run observations in design.md decisions 9 and 10 — whether `--provenance` was required, and whether omitting `registry-url` was correct — so the next reader does not re-derive them
-- [ ] 9.3 Record any other place where the first real release contradicted an assumption in this change
-- [ ] 9.4 Confirm the eleven questions deferred by `publish-to-npm-manually` are all answered, and that design.md's Open Questions section reflects only the two genuinely deferred items and their triggers
-- [ ] 9.5 Confirm no credential capable of publishing exists outside GitHub's OIDC exchange — the goal the whole change exists to reach
+- [x] 9.1 Confirm CI is green on `main` after every change in this proposal has landed
+- [x] 9.2 Record the first-run observations in design.md decisions 9 and 10 — whether `--provenance` was required, and whether omitting `registry-url` was correct — so the next reader does not re-derive them
+- [x] 9.3 Record any other place where the first real release contradicted an assumption in this change
+- [x] 9.4 Confirm the eleven questions deferred by `publish-to-npm-manually` are all answered, and that design.md's Open Questions section reflects only the two genuinely deferred items and their triggers
+- [x] 9.5 Confirm no credential capable of publishing exists outside GitHub's OIDC exchange — the goal the whole change exists to reach
