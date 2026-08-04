@@ -54,13 +54,13 @@ No artifact in this change can assert any of this. A mismatch here is the most l
 
 The guard is provable without touching the registry. OIDC authentication is not — it is only exercised by a real publish. That is acceptable: an authentication failure happens before any upload, so it costs a re-run rather than a version.
 
-- [ ] 5.1 Merge sections 1–3 to `main` so the release workflow exists on the default branch and can be triggered by a tag
-- [ ] 5.2 Prove the version guard fires: push a deliberately mismatched throwaway tag (a version that does not match `package.json`) and confirm the job fails at the guard, prints both versions, and never reaches the publish step
-- [ ] 5.3 Confirm that run contacted the registry not at all — no authentication attempt, no upload
-- [ ] 5.4 Delete the throwaway tag locally and on the remote
-- [ ] 5.5 Confirm the `test` job ran and passed in that run, so the gate is known to work before it matters
-- [ ] 5.6 Review the run's logs and confirm the `npm@11` step reports a version at or above 11.5.1
-- [ ] 5.7 Confirm from the run that the `publish` job's permissions are as intended, and that the `test` job was granted no identity-token permission
+- [x] 5.1 Merge sections 1–3 to `main` so the release workflow exists on the default branch and can be triggered by a tag
+- [x] 5.2 Prove the version guard fires: push a deliberately mismatched throwaway tag (a version that does not match `package.json`) and confirm the job fails at the guard, prints both versions, and never reaches the publish step
+- [x] 5.3 Confirm that run contacted the registry not at all — no authentication attempt, no upload
+- [x] 5.4 Delete the throwaway tag locally and on the remote
+- [x] 5.5 Confirm the `test` job ran and passed in that run, so the gate is known to work before it matters
+- [x] 5.6 Review the run's logs and confirm the `npm@11` step reports a version at or above 11.5.1
+- [x] 5.7 Confirm from the run that the `publish` job's permissions are as intended, and that the `test` job was granted no identity-token permission
 
 ## 6. First release — `0.1.0`
 
