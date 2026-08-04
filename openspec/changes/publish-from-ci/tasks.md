@@ -44,11 +44,11 @@ Do the action bump first, so the dry-run step is added to an already-current wor
 
 No artifact in this change can assert any of this. A mismatch here is the most likely single cause of a failed first release (design.md risks).
 
-- [ ] 4.1 On `npmjs.com/package/@rmacshane-lw/russ-panel-tui/access`, add a trusted publisher for GitHub Actions
-- [ ] 4.2 Set organisation/user to `russellmacshane`, repository to `russ-panel-tui`, workflow filename to `release.yml`, and leave the environment field empty (design.md decision 8)
-- [ ] 4.3 Confirm the workflow filename entered matches `.github/workflows/release.yml` exactly, including extension, with no path prefix
-- [ ] 4.4 Confirm the allowed action includes `npm publish`
-- [ ] 4.5 Do **not** yet enable "require two-factor authentication and disallow tokens" — that is section 7, after the pipeline is proven (design.md decision 12)
+- [x] 4.1 On `npmjs.com/package/@rmacshane-lw/russ-panel-tui/access`, add a trusted publisher for GitHub Actions
+- [x] 4.2 Set organisation/user to `russellmacshane`, repository to `russ-panel-tui`, workflow filename to `release.yml`, and leave the environment field empty (design.md decision 8)
+- [x] 4.3 Confirm the workflow filename entered matches `.github/workflows/release.yml` exactly, including extension, with no path prefix
+- [x] 4.4 Confirm the allowed action includes `npm publish`
+- [x] 4.5 Do **not** yet enable "require two-factor authentication and disallow tokens" — that is section 7, after the pipeline is proven (design.md decision 12)
 
 ## 5. Verify what can be verified before consuming a version
 

@@ -68,7 +68,9 @@ jobs:
       # Trusted publishing requires npm >= 11.5.1, but the latest Node
       # 22.x currently bundles npm 10.9.8, which is below that floor.
       - name: Install npm 11
-        run: npm install -g npm@11
+        run: |
+          npm install -g npm@11
+          npm --version
 
       - name: Verify tag matches package.json version
         run: |
