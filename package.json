@@ -1,6 +1,6 @@
 {
   "name": "@rmacshane-lw/russ-panel-tui",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "An Ink/React terminal UI command center, starting with a live weather panel.",
   "keywords": ["tui", "cli", "terminal", "ink", "react", "weather", "command-center"],
   "author": "Russ MacShane",

@@ -64,9 +64,9 @@ The guard is provable without touching the registry. OIDC authentication is not 
 
 ## 6. First release — `0.1.0`
 
-- [ ] 6.1 Raise `version` in `package.json` from `0.0.1` to `0.1.0` as an ordinary reviewable change (design.md decision 15)
+- [x] 6.1 Raise `version` in `package.json` from `0.0.1` to `0.1.0` as an ordinary reviewable change (design.md decision 15)
 - [ ] 6.2 Merge that change to `main`
-- [ ] 6.3 Confirm `npm view @rmacshane-lw/russ-panel-tui versions` does not already contain `0.1.0`
+- [x] 6.3 Confirm `npm view @rmacshane-lw/russ-panel-tui versions` does not already contain `0.1.0`
 - [ ] 6.4 Tag the merged commit on `main` as `v0.1.0` and push the tag
 - [ ] 6.5 Confirm the `test` job passes and the `publish` job starts only after it
 - [ ] 6.6 Confirm the version guard passes, comparing `v0.1.0` against `0.1.0`
