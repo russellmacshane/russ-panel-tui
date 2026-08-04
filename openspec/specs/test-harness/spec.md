@@ -134,7 +134,7 @@ The harness SHALL let a test place the configuration in a state that cannot be r
 - **THEN** the application's session-only behaviour and its warning can both be asserted, without the test being skipped on platforms where the arrangement is unavailable
 
 ### Requirement: Continuous integration
-The test suite SHALL run automatically in continuous integration on pushes and pull requests, together with the build, and a failure SHALL be reported as a failed check.
+The test suite SHALL run automatically in continuous integration on pushes and pull requests, together with the build, and a failure SHALL be reported as a failed check. The same suite SHALL additionally run as the gate on a release, where a failure SHALL prevent the release from publishing rather than only being reported.
 
 #### Scenario: A pull request with a failing test
 - **WHEN** a pull request contains a change that breaks a test
@@ -147,3 +147,11 @@ The test suite SHALL run automatically in continuous integration on pushes and p
 #### Scenario: A passing pull request
 - **WHEN** a pull request compiles and all tests pass
 - **THEN** continuous integration reports a successful check
+
+#### Scenario: The suite gates a release
+- **WHEN** a release is triggered and the suite fails
+- **THEN** the publish does not run and nothing is uploaded to the registry, so the consequence of a failure on the release path is a blocked release rather than a red check on an already-published version
+
+#### Scenario: The release gate runs the same commands as the branch checks
+- **WHEN** the release gate runs
+- **THEN** it runs the same build, type check, and test commands that pushes and pull requests run, so a suite that passes on a branch is not gated differently when it is released
