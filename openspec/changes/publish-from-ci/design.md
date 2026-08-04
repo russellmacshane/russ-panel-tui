@@ -170,6 +170,8 @@ Verified as available here rather than assumed: provenance requires an OIDC-veri
 
 npm defaults to the public registry with no configuration, so the parameter buys nothing here. Omitted.
 
+**Decision 16 partially defuses this, and the omission stands anyway.** `setup-node@v7.0.0` removes a dummy `NODE_AUTH_TOKEN` export — the upstream fix for exactly this class of failure — so on v7 the risk is materially lower than the paragraph above describes. The parameter is still omitted, because the argument for omitting it was never only the failure mode: it configures a registry that is already the default. What changes is the confidence, not the choice, and the failure mode is documented here because it is version-dependent rather than eliminated.
+
 Flagged as the most likely first-run failure alongside a filename mismatch, and treated as something to observe on the first real run rather than to design around: if authentication fails, this and the trusted-publisher configuration are the first two things to check.
 
 ### 11. Duplicate the four test steps into `release.yml`
@@ -210,6 +212,27 @@ Cheap, and it catches one case nothing else does. The `files` allowlist is defau
 
 `0.0.2` was considered, on the argument that the pipeline is itself unproven and might warrant another disposable number. Rejected: the pipeline's failure modes are authentication and the version guard, both of which fail *before* anything is uploaded, so a botched first run costs a re-run rather than a version. `1.0.0` stays unclaimed until there is a compatibility promise worth making.
 
+### 16. Bump both actions to v7, pinned by major tag
+
+`actions/checkout@v4` and `actions/setup-node@v4` target Node 20, which GitHub has deprecated and is already force-running on Node 24. That is a warning on every run today. It became this change's business rather than a separate cleanup for a specific reason: `release.yml` pins the same two actions, so writing it at v4 would *duplicate* the warning into a new file, and a reader would reasonably assume the new file was written against current guidance.
+
+**The deciding detail is not the deprecation.** `setup-node@v7.0.0` removes a dummy `NODE_AUTH_TOKEN` export, which is the upstream fix for the failure mode decision 10 exists to avoid. The one job in this repository where that behaviour matters is the publish job. Choosing the major that fixes it, on the change that introduces that job, is the cheapest time it will ever be available.
+
+`v7.0.0` also added upstream documentation for publishing with a trusted publisher, which is a useful signal: the OIDC path this change depends on is now a documented use case of the action rather than something inferred from its behaviour.
+
+Verified against this repository rather than assumed, because every major from v5 onward carries a breaking change:
+
+| Major | Breaking change | Effect here |
+|---|---|---|
+| checkout v5 | Requires runner ≥ v2.327.1 | None — GitHub-hosted runners are well past it |
+| setup-node v5 | Auto-caches when `package.json` declares `packageManager` | None — no such field, and `cache: npm` is already explicit |
+| setup-node v6 | Automatic caching limited to npm | None — npm is the package manager |
+| checkout v7 | Blocks fork PR checkout for `pull_request_target` / `workflow_run` | None — neither trigger is used |
+
+Both majors are recent (July 2026), and that is the real cost. Weighed against it: these are first-party actions, the v7 changes are an ESM migration plus dependency bumps rather than a behavioural rewrite, checkout already has a `v7.0.1` patch out, and a defect would surface as a failed run rather than a bad publish — decision 4's ordering means the test job runs first and the version guard runs before the upload.
+
+**Pinned by major tag (`@v7`), not by commit SHA.** SHA pinning was considered, and it is the stronger posture: it protects against a major tag being re-pointed at compromised code in the one job holding the publishing identity, which is thematically exactly what this change cares about. Declined for now on consistency and maintenance — `ci.yml` already floats within a major for both the actions and the Node pin (`'22.x'`), and SHA pinning without Dependabot configured means the pins silently rot. Recorded as a deliberate trade rather than an oversight, with a recognisable trigger: adopt SHA pinning if Dependabot is ever configured, since that removes the maintenance objection entirely.
+
 ## Risks / Trade-offs
 
 - **[The trusted-publisher configuration lives outside the repository and no artifact can assert it]** → Accepted; it is the one irreducible manual step. Mitigated by naming the exact four values in the tasks (org `russellmacshane`, repo `russ-panel-tui`, workflow `release.yml`, no environment) and by decision 7 pinning the filename so it cannot drift casually. A mismatch fails the release before upload, so the cost is a failed run rather than a bad publish.
@@ -219,6 +242,7 @@ Cheap, and it catches one case nothing else does. The `files` allowlist is defau
 - **[Enabling "disallow tokens" makes a broken workflow a total release outage]** → Sequenced last (decision 12) so the pipeline is proven first. The escape hatch is that the setting is reversible on npm's settings page by the account owner; it is not a one-way door like a published version.
 - **[`--provenance` might be rejected as an unknown flag on some npm version]** → Bounded by decision 5's explicit `npm@11` pin, which is well above the version that introduced it.
 - **[A tag pushed against the wrong commit publishes the wrong tree]** → The guard compares versions, not commits, so tagging the wrong commit at the right version would publish that commit. Mitigated by provenance rather than prevented: the attestation records exactly which commit produced the tarball, so the mistake is discoverable after the fact. Preventing it would require CI to own tagging, which decision 3 rules out.
+- **[Both action majors are only weeks old, and are floating tags rather than SHAs]** → Accepted per decision 16. Bounded by these being first-party actions whose v7 changes are an ESM migration rather than a rewrite, and by the failure mode being a failed run rather than a bad publish. The floating-tag exposure is a deliberate trade with a stated trigger for revisiting, not an oversight.
 - **[Scope creep from "we are touching CI anyway" — a Node matrix, GitHub Releases, changelog generation]** → Refused in Non-goals. GitHub Releases is the most tempting, because a tag makes it feel expected; it is unrelated to distribution and belongs with a decision about what release notes are for.
 
 ## Migration Plan
@@ -235,6 +259,7 @@ Two items are deliberately deferred, with recognisable triggers rather than vagu
 
 - **A GitHub Environment with required approval** — decision 8. Trigger: a second person gains push access to the repository.
 - **Changesets or an equivalent** — decision 3. Trigger: release frequency rising to where hand-bumping is the bottleneck, or a second package appearing in the repository.
+- **SHA pinning for the workflow actions** — decision 16. Trigger: Dependabot being configured for GitHub Actions, which removes the maintenance objection that is the only reason it was declined.
 
 One item is an observation to make on the first run rather than a decision to take now:
 

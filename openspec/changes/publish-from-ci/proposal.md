@@ -24,6 +24,8 @@ What remains is that publishing is a manual act performed with a long-lived cred
 
 - **`ci.yml` gains `npm publish --dry-run` on pull requests.** Prints the exact tarball file list in every PR. Largely redundant with the `files` allowlist — except when the allowlist itself is what a PR is editing, which is the case it exists to catch.
 
+- **Bump `actions/checkout` and `actions/setup-node` from v4 to v7 in both workflows.** v4 targets Node 20, which GitHub has deprecated and is already force-running on Node 24 — a warning on every run today, and one that would be duplicated into `release.yml` rather than introduced by it. The bump is not merely hygiene: `setup-node@v7.0.0` removes a dummy `NODE_AUTH_TOKEN` export, which is the exact mechanism that makes trusted publishing fragile when `registry-url` is involved. Verified against this repo: setup-node v5's automatic-caching breaking change keys off a `packageManager` field that `package.json` does not have, and `cache: npm` is already explicit, so nothing in the chain from v4 to v7 changes behaviour here.
+
 - **`prepublishOnly` stays, and becomes the publish job's build step.** `dist/` is gitignored, so the publish job must compile regardless. Letting the existing guard do it keeps the publish job to a handful of steps and preserves the property that the uploaded tarball cannot be older than the commit being released.
 
 - **Close the token path last.** After the first successful CI publish, enable npm's *require two-factor authentication and disallow tokens* on the package, and revoke the granular token used for `0.0.1`. Sequenced last deliberately: enabling it first removes the fallback that a debugging session would need.
@@ -56,8 +58,8 @@ What remains is that publishing is a manual act performed with a long-lived cred
 
 **Affected code**
 
-- **New**: `.github/workflows/release.yml` — the tag-triggered `test` → `publish` pipeline. Its filename is registered with npm and is not freely renameable afterwards.
-- `.github/workflows/ci.yml` — add a `npm publish --dry-run` step on pull requests. The existing Node pin, its comment, and the build/typecheck/test steps are unchanged.
+- **New**: `.github/workflows/release.yml` — the tag-triggered `test` → `publish` pipeline. Its filename is registered with npm and is not freely renameable afterwards. Uses `actions/checkout@v7` and `actions/setup-node@v7`.
+- `.github/workflows/ci.yml` — add a `npm publish --dry-run` step on pull requests, and bump `actions/checkout` and `actions/setup-node` from v4 to v7. The existing Node pin, its comment, and the build/typecheck/test steps are unchanged.
 - `package.json` — `version` becomes `0.1.0` as part of the release itself. `prepublishOnly` is unchanged and takes on a second role. No other field changes.
 - `README.md` — document that releases are published from CI on a tag, so the install instructions are not the only distribution documentation.
 
