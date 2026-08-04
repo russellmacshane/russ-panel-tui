@@ -31,8 +31,8 @@ Do the action bump first, so the dry-run step is added to an already-current wor
 - [x] 2.7 Confirm the step cannot run on a tag push or interfere with the release workflow
 - [x] 2.8 Confirm the dry run needs no credential and requests no `id-token` permission
 - [x] 2.9 Confirm the existing Node pin at `ci.yml:18` and the comment above it are unchanged, and that the build, typecheck, and test steps are untouched
-- [ ] 2.10 Open a scratch pull request and confirm the dry run's output actually shows the file list — `dist/`, `package.json`, `README.md`, `LICENSE` — rather than being swallowed by a lifecycle script running quietly
-- [ ] 2.11 Confirm the dry run does not fail the check for a reason unrelated to packaging, such as `prepublishOnly` behaving differently under `--dry-run` than expected
+- [x] 2.10 Open a scratch pull request and confirm the dry run's output actually shows the file list — `dist/`, `package.json`, `README.md`, `LICENSE` — rather than being swallowed by a lifecycle script running quietly
+- [x] 2.11 Confirm the dry run does not fail the check for a reason unrelated to packaging, such as `prepublishOnly` behaving differently under `--dry-run` than expected
 
 ## 3. Documentation
 
