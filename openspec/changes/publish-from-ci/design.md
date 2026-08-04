@@ -164,6 +164,8 @@ So it is passed. An explicit flag also documents intent in the workflow file, wh
 
 Verified as available here rather than assumed: provenance requires an OIDC-verified runner publishing a public package from a public repository. `russellmacshane/russ-panel-tui` is public, the package is public, and `repository.url` is already `git+https://github.com/russellmacshane/russ-panel-tui.git` — the exact form npm matches against, and a common cause of provenance failure when it drifts.
 
+**First-run observation (`v0.1.0`, 2026-08-04):** `npm publish --provenance` succeeded on the first attempt — signed and published a provenance statement to Sigstore's transparency log. Whether the explicit flag was *necessary* rather than automatic is still not determined empirically, since it was never omitted to test the documented-automatic claim; the flag remains passed on the reasoning in this decision regardless.
+
 ### 10. Omit `registry-url` from `setup-node` in the publish job
 
 `actions/setup-node` with `registry-url` writes an `.npmrc` containing `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`. Under trusted publishing there is no `NODE_AUTH_TOKEN`, and an `.npmrc` pointing at an unset variable can produce an authentication error rather than falling back to the OIDC exchange.
@@ -173,6 +175,13 @@ npm defaults to the public registry with no configuration, so the parameter buys
 **Decision 16 partially defuses this, and the omission stands anyway.** `setup-node@v7.0.0` removes a dummy `NODE_AUTH_TOKEN` export — the upstream fix for exactly this class of failure — so on v7 the risk is materially lower than the paragraph above describes. The parameter is still omitted, because the argument for omitting it was never only the failure mode: it configures a registry that is already the default. What changes is the confidence, not the choice, and the failure mode is documented here because it is version-dependent rather than eliminated.
 
 Flagged as the most likely first-run failure alongside a filename mismatch, and treated as something to observe on the first real run rather than to design around: if authentication fails, this and the trusted-publisher configuration are the first two things to check.
+
+**First-run observation (`v0.1.0`, 2026-08-04):** authentication succeeded on the first attempt with `registry-url` omitted — the OIDC exchange worked cleanly, with no `.npmrc`/`NODE_AUTH_TOKEN` failure of the kind this decision worried about. The omission was correct, or at minimum harmless; on `setup-node@v7` there was no failure mode to observe either way.
+
+### First-run observations beyond decisions 9 and 10
+
+- `npm publish` printed `npm warn publish "bin[russ-panel]" script name dist/cli.js was invalid and removed` during packing — an assumption this change didn't carry in, since nothing here reopens the `bin` field (settled in `publish-to-npm-manually`). Investigated rather than ignored: the actual published tarball and registry metadata both still carry the `bin` field and the file, and both `npx @rmacshane-lw/russ-panel-tui@0.1.0` and a global install worked correctly. The warning appears to fire from a pre-`prepublishOnly` check — `dist/cli.js` doesn't exist yet in a fresh checkout at that point — and is superseded once the real build runs. Cosmetic, not a defect, but worth a second look if a future npm version changes this check's behaviour.
+- No other assumption in this change was contradicted by the first real release. The version guard, job separation, `npm@11` pin (resolved to `11.19.0`), and provenance all behaved exactly as designed.
 
 ### 11. Duplicate the four test steps into `release.yml`
 
@@ -255,11 +264,13 @@ The manual publish path continues to work until decision 12's step 4, and every 
 
 **None blocking.** All eleven questions deferred by `publish-to-npm-manually` are resolved: decision 1 (version source), decision 2 (non-release pushes, tag ordering, release branch — dissolved), the Context section (OIDC bootstrap — verified real), decision 12 and the credential model (OIDC over token), decision 4 (job separation), decision 9 (provenance), decision 6 (`prepublishOnly`), decision 14 (`--dry-run` on pull requests), and decision 13 (dist-tags).
 
-Two items are deliberately deferred, with recognisable triggers rather than vague intentions:
+Three items are deliberately deferred, with recognisable triggers rather than vague intentions:
 
 - **A GitHub Environment with required approval** — decision 8. Trigger: a second person gains push access to the repository.
 - **Changesets or an equivalent** — decision 3. Trigger: release frequency rising to where hand-bumping is the bottleneck, or a second package appearing in the repository.
 - **SHA pinning for the workflow actions** — decision 16. Trigger: Dependabot being configured for GitHub Actions, which removes the maintenance objection that is the only reason it was declined.
+
+**Resolved by the first real release (`v0.1.0`, 2026-08-04):** decisions 9 and 10 were flagged above as observations to make rather than decisions to take now. Both are recorded there: `--provenance` succeeded and produced a Sigstore transparency-log entry, and omitting `registry-url` produced no authentication failure. Neither result changes the decision, only the confidence behind it.
 
 One item is an observation to make on the first run rather than a decision to take now:
 
