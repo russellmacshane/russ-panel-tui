@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # Ink 7 declares `engines: {node: '>=22'}`. Pinned rather than
           # floating so a Node release cannot turn a green branch red.
@@ -32,3 +32,7 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: Dry-run publish (pull requests only)
+        if: github.event_name == 'pull_request'
+        run: npm publish --dry-run

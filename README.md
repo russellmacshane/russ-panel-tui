@@ -19,6 +19,10 @@ Or run it without installing:
 npx @rmacshane-lw/russ-panel-tui
 ```
 
+## Releases
+
+Published versions come from CI, triggered by pushing a `v*` git tag. Each release carries an npm provenance attestation linking it back to the commit it was built from.
+
 ## Run it from a checkout
 
 ```sh
