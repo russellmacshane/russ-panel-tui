@@ -65,25 +65,25 @@ The guard is provable without touching the registry. OIDC authentication is not 
 ## 6. First release — `0.1.0`
 
 - [x] 6.1 Raise `version` in `package.json` from `0.0.1` to `0.1.0` as an ordinary reviewable change (design.md decision 15)
-- [ ] 6.2 Merge that change to `main`
+- [x] 6.2 Merge that change to `main`
 - [x] 6.3 Confirm `npm view @rmacshane-lw/russ-panel-tui versions` does not already contain `0.1.0`
-- [ ] 6.4 Tag the merged commit on `main` as `v0.1.0` and push the tag
-- [ ] 6.5 Confirm the `test` job passes and the `publish` job starts only after it
-- [ ] 6.6 Confirm the version guard passes, comparing `v0.1.0` against `0.1.0`
-- [ ] 6.7 Confirm `prepublishOnly` ran the build, typecheck, and tests inside the publish step, and that the publish uploaded output compiled from the tagged commit rather than from any cached artifact
-- [ ] 6.8 Confirm the publish authenticated with no stored credential — the run should show an OIDC exchange, and no step should reference a token
-- [ ] 6.9 If authentication fails, check the two most likely causes first: the trusted-publisher workflow filename from 4.3, and the `registry-url` omission from 1.5
+- [x] 6.4 Tag the merged commit on `main` as `v0.1.0` and push the tag
+- [x] 6.5 Confirm the `test` job passes and the `publish` job starts only after it
+- [x] 6.6 Confirm the version guard passes, comparing `v0.1.0` against `0.1.0`
+- [x] 6.7 Confirm `prepublishOnly` ran the build, typecheck, and tests inside the publish step, and that the publish uploaded output compiled from the tagged commit rather than from any cached artifact
+- [x] 6.8 Confirm the publish authenticated with no stored credential — the run should show an OIDC exchange, and no step should reference a token
+- [x] 6.9 If authentication fails, check the two most likely causes first: the trusted-publisher workflow filename from 4.3, and the `registry-url` omission from 1.5 — not needed, authentication succeeded on the first attempt
 
 ## 7. Post-release verification
 
-- [ ] 7.1 Confirm `0.1.0` is present on the registry and that `latest` points at it
-- [ ] 7.2 Confirm the package page shows the provenance badge and that it links to the `v0.1.0` commit in `russellmacshane/russ-panel-tui`
-- [ ] 7.3 Confirm via `npm view` or the package page that the attestation names the expected repository, workflow, and ref
-- [ ] 7.4 Fetch the published tarball from the registry and confirm its contents match the allowlist — `dist/`, `package.json`, `README.md`, `LICENSE` and nothing else — rather than trusting the dry run
-- [ ] 7.5 From outside the repository, run `npx @rmacshane-lw/russ-panel-tui@0.1.0` and confirm the TUI launches
-- [ ] 7.6 Install `0.1.0` globally from the registry and confirm `russ-panel` launches and quits cleanly
-- [ ] 7.7 Confirm `0.0.1` is untouched and still carries no attestation, so its absence is not later read as a defect
-- [ ] 7.8 Confirm no version other than `0.1.0` was published by the run
+- [x] 7.1 Confirm `0.1.0` is present on the registry and that `latest` points at it
+- [x] 7.2 Confirm the package page shows the provenance badge and that it links to the `v0.1.0` commit in `russellmacshane/russ-panel-tui`
+- [x] 7.3 Confirm via `npm view` or the package page that the attestation names the expected repository, workflow, and ref
+- [x] 7.4 Fetch the published tarball from the registry and confirm its contents match the allowlist — `dist/`, `package.json`, `README.md`, `LICENSE` and nothing else — rather than trusting the dry run
+- [x] 7.5 From outside the repository, run `npx @rmacshane-lw/russ-panel-tui@0.1.0` and confirm the TUI launches
+- [x] 7.6 Install `0.1.0` globally from the registry and confirm `russ-panel` launches and quits cleanly
+- [x] 7.7 Confirm `0.0.1` is untouched and still carries no attestation, so its absence is not later read as a defect
+- [x] 7.8 Confirm no version other than `0.1.0` was published by the run
 
 ## 8. Close the credential path
 
