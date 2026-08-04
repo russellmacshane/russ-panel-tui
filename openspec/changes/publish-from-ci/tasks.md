@@ -89,8 +89,8 @@ The guard is provable without touching the registry. OIDC authentication is not 
 
 Ordered last deliberately. Enabling this before the pipeline is proven removes the fallback a debugging session would need (design.md decision 12).
 
-- [ ] 8.1 On the package's registry settings, enable "require two-factor authentication and disallow tokens"
-- [ ] 8.2 Confirm a subsequent release still works — either by the next real release or by confirming the setting does not affect the OIDC path, since token restrictions apply to token authentication only
+- [x] 8.1 On the package's registry settings, enable "require two-factor authentication and disallow tokens"
+- [x] 8.2 Confirm a subsequent release still works — either by the next real release or by confirming the setting does not affect the OIDC path, since token restrictions apply to token authentication only
 - [ ] 8.3 Revoke the granular access token that published `0.0.1` (created because the account's passkey-based 2FA has no OTP path for a CLI publish — see `publish-to-npm-manually` task 6.4)
 - [ ] 8.4 Confirm no other token in the account can publish this package
 - [ ] 8.5 Confirm that publishing from a maintainer's machine is now refused, so the intended posture is real rather than assumed
